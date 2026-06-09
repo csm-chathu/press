@@ -1,0 +1,60 @@
+Core Operations
+
+Quotation templates — save common job types (business cards, brochures, banners) for 1-click re-quoting
+Job card cloning — duplicate a completed job card for repeat orders
+Rush/priority jobs — mark jobs urgent with a visual flag and push them to the top of the queue
+Client proof approval — let portal clients approve or reject artwork directly from their portal (not via phone)
+Artwork file uploads — attach and version-control design files per job card
+Communication
+
+Email notifications — automated emails on job milestones alongside SMS (Laravel Mail + queues)
+WhatsApp Business API — send proof images and status updates via WhatsApp instead of plain SMS
+In-app notification bell — real-time notifications when jobs are assigned, overdue, or approved
+Customer statement emails — auto-send monthly outstanding balance statements
+Scheduling & Planning
+
+Machine scheduler / calendar — drag-and-drop visual calendar to book machines per job
+Operator workload view — see how many jobs each operator has in their queue
+Production capacity planning — flag when a machine is overbooked for a given day
+Due date alerts — automatic warning when a job is approaching or past due
+Finance & Reporting
+
+Customer statements — aged receivables, credit balance, payment history per customer
+Supplier statements — outstanding AP, payment history per supplier
+VAT/tax reports — monthly tax summary ready for filing
+Commission tracking — calculate sales staff commission from converted quotations
+Excel/CSV export — export any table (jobs, invoices, costing) to spreadsheet
+P&L report — monthly/yearly profit and loss from actual job costing data
+Inventory & Purchasing
+
+Stock reorder alerts + auto PO — generate a draft purchase order when stock hits reorder level
+Supplier price comparison — track same material from multiple suppliers and pick cheapest
+Purchase requisition workflow — staff requests → manager approves → PO issued
+Barcode scanning — scan product barcodes during GRN to auto-fill line items
+HR & Staff
+
+Employee management — basic HR profiles, department, contact info
+Attendance tracking — daily clock-in/out linked to labour cost
+Payroll/salary slips — generate monthly salary slips per employee
+Machine maintenance log — schedule and record maintenance per press machine
+Customer & Portal
+
+Customer credit limits — block new orders if balance exceeds credit limit
+Customer loyalty/tiered pricing — auto-apply discounts for high-volume clients
+Portal file downloads — let clients download their own invoices and job card PDFs
+Delivery tracking page — real-time public tracking link sent with delivery SMS
+System & Security
+
+Role-based dashboard customisation — operators see machine queue; managers see revenue; accountants see finance KPIs
+Two-factor authentication — TOTP 2FA for admin/owner accounts
+Full audit trail — who changed what and when on every record
+Data backup & restore — scheduled DB dump with restore from admin panel
+PWA / mobile app — installable mobile-optimised view for production floor tablet use
+Webhook integrations — POST to external URL when job status changes (connect to Zapier, etc.)
+The highest-value ones to build next (based on a typical print shop workflow):
+
+Quotation templates — saves the most daily time
+Email notifications — reaches clients who don't respond to SMS
+Machine scheduler — prevents double-booking machines
+Customer statements — reduces AR chasing time
+Client proof approval via portal — eliminates back-and-forth calls

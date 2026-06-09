@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LMUC POS — Customer Onboarding Guide</title>
+  <style>
+    :root {
+      --amber:  #f59e0b;
+      --amber2: #fbbf24;
+      --dark:   #111827;
+      --gray:   #6b7280;
+      --light:  #f9fafb;
+      --border: #e5e7eb;
+      --green:  #10b981;
+      --blue:   #3b82f6;
+      --purple: #8b5cf6;
+      --red:    #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--dark);
+      background: #fff;
+      line-height: 1.6;
+    }
+
+    /* ── HERO ─────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, #111827 0%, #1f2937 60%, #78350f 100%);
+      color: #fff;
+      padding: 64px 48px 56px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(245,158,11,.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(245,158,11,.15);
+      border: 1px solid rgba(245,158,11,.3);
+      color: var(--amber2);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--amber2); }
+    .hero p {
+      font-size: 17px;
+      color: #9ca3af;
+      max-width: 540px;
+      margin-bottom: 32px;
+    }
+    .hero-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .hero-meta-item { font-size: 13px; color: #9ca3af; }
+    .hero-meta-item strong { display: block; color: #fff; font-size: 20px; font-weight: 700; }
+
+    /* ── LAYOUT ───────────────────────────────────────────── */
+    .container { max-width: 960px; margin: 0 auto; padding: 0 32px; }
+    section { padding: 56px 0; }
+    section + section { border-top: 1px solid var(--border); }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 8px;
+    }
+    .section-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      margin-bottom: 8px;
+    }
+    .section-sub {
+      color: var(--gray);
+      font-size: 15px;
+      margin-bottom: 40px;
+    }
+
+    /* ── FEATURE CARDS ────────────────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      transition: box-shadow .2s;
+    }
+    .feature-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+    .feature-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      margin-bottom: 14px;
+    }
+    .feature-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .feature-card p  { font-size: 13px; color: var(--gray); line-height: 1.55; }
+
+    /* ── MODULE TABLE ─────────────────────────────────────── */
+    .module-list { display: flex; flex-direction: column; gap: 12px; }
+    .module-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .module-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--amber);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .module-row h4 { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .module-row p  { font-size: 13px; color: var(--gray); }
+
+    /* ── STEPS ────────────────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: flex;
+      gap: 20px;
+      padding-bottom: 32px;
+      position: relative;
+    }
+    .step:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 19px; top: 40px;
+      width: 2px;
+      bottom: 0;
+      background: var(--border);
+    }
+    .step-num {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--dark);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      z-index: 1;
+    }
+    .step-body h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; padding-top: 8px; }
+    .step-body p  { font-size: 14px; color: var(--gray); margin-bottom: 10px; }
+    .step-body code {
+      display: block;
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12.5px;
+      font-family: 'Menlo', 'Consolas', monospace;
+      color: #374151;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    /* ── CREDENTIALS TABLE ────────────────────────────────── */
+    .creds-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .creds-table th {
+      background: var(--light);
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--gray);
+      border-bottom: 2px solid var(--border);
+    }
+    .creds-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .creds-table tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-owner   { background:#fef3c7; color:#92400e; }
+    .badge-admin   { background:#fee2e2; color:#991b1b; }
+    .badge-manager { background:#dbeafe; color:#1e40af; }
+    .badge-cashier { background:#d1fae5; color:#065f46; }
+    .badge-keeper  { background:#ede9fe; color:#5b21b6; }
+    .mono { font-family: 'Menlo','Consolas',monospace; font-size: 12.5px; }
+
+    /* ── API CALLOUT ──────────────────────────────────────── */
+    .api-box {
+      background: #111827;
+      color: #e5e7eb;
+      border-radius: 14px;
+      padding: 28px 32px;
+      font-family: 'Menlo','Consolas',monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      margin-top: 24px;
+      overflow-x: auto;
+    }
+    .api-box .comment { color: #6b7280; }
+    .api-box .method  { color: #34d399; font-weight: 700; }
+    .api-box .url     { color: #60a5fa; }
+    .api-box .key     { color: #f9a8d4; }
+    .api-box .val     { color: #fcd34d; }
+
+    /* ── NOTICE ───────────────────────────────────────────── */
+    .notice {
+      display: flex;
+      gap: 12px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-size: 13.5px;
+      color: #92400e;
+      margin-top: 24px;
+    }
+    .notice .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── FOOTER ───────────────────────────────────────────── */
+    footer {
+      background: var(--dark);
+      color: #6b7280;
+      padding: 40px 48px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: gap;
+      gap: 12px;
+    }
+    footer strong { color: #fff; }
+
+    /* ── PRINT ────────────────────────────────────────────── */
+    @media print {
+      .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .feature-card, .module-row, .step { break-inside: avoid; }
+      section { padding: 36px 0; }
+    }
+
+    @media (max-width: 600px) {
+      .hero { padding: 40px 24px; }
+      .hero h1 { font-size: 30px; }
+      .container { padding: 0 20px; }
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HERO ────────────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="container">
+    <div class="hero-badge">⚡ Customer Onboarding Guide</div>
+    <h1>LMUC <span>POS &amp; Business</span><br>Management System</h1>
+    <p>A complete point-of-sale and business management platform for restaurants, bars, and retail shops — accessible from any device, any browser.</p>
+    <div class="hero-meta">
+      <div class="hero-meta-item"><strong>5</strong> User Roles</div>
+      <div class="hero-meta-item"><strong>20+</strong> Modules</div>
+      <div class="hero-meta-item"><strong>Multi</strong> Branch Ready</div>
+      <div class="hero-meta-item"><strong>Real-time</strong> Stock &amp; Reports</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── WHAT IS IT ───────────────────────────────────────────────── -->
+<div class="container">
+<section>
+  <div class="section-label">Overview</div>
+  <div class="section-title">Everything your business needs, in one place</div>
+  <div class="section-sub">LMUC POS is a web-based system that runs in your browser — no installation required. It handles sales, inventory, purchasing, accounting, and reporting for single or multi-branch operations.</div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#fef3c7;">🧾</div>
+      <h3>Fast Point of Sale</h3>
+      <p>Touch-optimized POS with barcode scanning, quick product search, table selection, and instant bill printing.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#d1fae5;">📦</div>
+      <h3>Inventory Control</h3>
+      <p>Real-time stock levels, low-stock alerts, stock movement history, and damage tracking across all branches.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#dbeafe;">🛒</div>
+      <h3>Purchase Management</h3>
+      <p>Raise purchase orders, receive stock via GRN with partial receive support, and track supplier invoices.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#ede9fe;">📊</div>
+      <h3>Reports &amp; Analytics</h3>
+      <p>Sales trends, revenue charts, fast-moving items, busiest hours, payment method breakdown, and more.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#fee2e2;">💰</div>
+      <h3>Accounting</h3>
+      <p>Automatic double-entry journal postings for every sale, purchase, GRN, salary, and expense — no manual entry.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#fce7f3;">🏪</div>
+      <h3>Multi-Branch</h3>
+      <p>Each branch is fully isolated. Staff see only their branch data; owners and admins see everything.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── MODULES ──────────────────────────────────────────────────── -->
+<section>
+  <div class="section-label">Modules</div>
+  <div class="section-title">Full feature breakdown</div>
+  <div class="section-sub">Every module is accessible from the sidebar based on the user's role and permissions.</div>
+
+  <div class="module-list">
+    <div class="module-row">
+      <div class="module-num">1</div>
+      <div>
+        <h4>Dashboard</h4>
+        <p>Today's revenue, monthly totals, pending bills, low-stock alerts, fast-moving items, revenue trend chart (30 days), payment method donut, busiest hours bar chart, and recent bills table.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">2</div>
+      <div>
+        <h4>New Bill / POS</h4>
+        <p>Two-panel POS layout — product card grid on the left with category tabs, barcode scanner, and search; bill builder on the right with table/customer selector, item quantities, discounts, tax, and payment method. Supports draft bills and direct completion.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">3</div>
+      <div>
+        <h4>Sales &amp; Invoices</h4>
+        <p>Full sales history with This Week / Today / This Month quick filters, status filter (paid, pending, partial, refunded), search by invoice or customer, and printable receipts.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">4</div>
+      <div>
+        <h4>Products</h4>
+        <p>Product catalogue with images (Cloudinary), SKU, barcode, selling price, stock level badges, category and type filters, low-stock filter, and one-click barcode label printing. Image zoom lightbox on click.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">5</div>
+      <div>
+        <h4>Categories</h4>
+        <p>Manage product categories per branch. Assign products to categories for faster POS filtering.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">6</div>
+      <div>
+        <h4>Purchase Orders</h4>
+        <p>Create and manage purchase orders (POs) with line items, unit costs, and supplier assignment. Expandable rows show full item details per order. Status tracking: pending → partial received → completed.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">7</div>
+      <div>
+        <h4>GRN — Goods Received Notes</h4>
+        <p>Receive stock against a PO. Select a PO and all items auto-populate with ordered quantities. Adjust received qty, free qty, unit cost, batch number, and expiry date per line. Stock is incremented immediately on save.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">8</div>
+      <div>
+        <h4>Suppliers</h4>
+        <p>Supplier directory with contact details, city, country, and branch assignment. Linked to products and purchase orders.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">9</div>
+      <div>
+        <h4>Supplier Returns</h4>
+        <p>Record returns to suppliers with quantity and reason. Stock is automatically decremented and accounting entries are posted.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">10</div>
+      <div>
+        <h4>Customers</h4>
+        <p>Customer database with name, phone, email, and loyalty tracking. Customers can be selected at POS for personalised billing and credit tracking.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">11</div>
+      <div>
+        <h4>Tables</h4>
+        <p>Table layout management for dine-in orders. Tables can be assigned to bills at the POS and tracked for open orders.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">12</div>
+      <div>
+        <h4>Open Bottles</h4>
+        <p>Track partially consumed liquor bottles. When a serving is sold, the system finds an open bottle with enough remaining volume or auto-opens a new one, decrementing stock accordingly.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">13</div>
+      <div>
+        <h4>Bottle Deposits</h4>
+        <p>Manage bottle deposit liabilities. Deposits are recorded automatically when a bottle sale is completed and cleared when the bottle is returned.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">14</div>
+      <div>
+        <h4>Damage Reports</h4>
+        <p>Log damaged or lost stock with quantity and reason. Stock is decremented and a damage expense entry is posted to the accounting ledger.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">15</div>
+      <div>
+        <h4>Stock Ledger</h4>
+        <p>Full audit trail of every stock movement — sales, GRNs, purchases, returns, damages — with timestamps, user, and reference details.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">16</div>
+      <div>
+        <h4>Finance</h4>
+        <p>Income and expense tracking, salary records, and the full double-entry accounting journal. View profit/loss by date range.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">17</div>
+      <div>
+        <h4>Price Matrix</h4>
+        <p>Manage tiered or bulk pricing rules per product, applicable at the POS during billing.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">18</div>
+      <div>
+        <h4>Day End</h4>
+        <p>End-of-day cash reconciliation — record physical cash count, view expected vs. actual, and close the shift with a summary report.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">19</div>
+      <div>
+        <h4>Reports</h4>
+        <p>Exportable reports covering sales summary, stock summary, purchase history, customer activity, and financial statements — filterable by date range and branch.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">20</div>
+      <div>
+        <h4>Audit Log</h4>
+        <p>Immutable log of all major system events — who created, edited, or deleted records and when. Essential for accountability and compliance.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">21</div>
+      <div>
+        <h4>Users &amp; Roles</h4>
+        <p>Manage staff accounts with role-based access control. Assign roles (Owner, Admin, Manager, Cashier, Store Keeper) and branch. Toggle active/inactive status.</p>
+      </div>
+    </div>
+    <div class="module-row">
+      <div class="module-num">22</div>
+      <div>
+        <h4>Restaurant Settings</h4>
+        <p>Configure your shop name, address, city, country, and logo. The logo appears on the login screen and browser tab automatically.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── GETTING STARTED ───────────────────────────────────────────── -->
+<section>
+  <div class="section-label">Getting Started</div>
+  <div class="section-title">Up and running in minutes</div>
+  <div class="section-sub">Follow these steps after receiving your system URL from your administrator.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Open your system URL</h3>
+        <p>Open the URL provided to you in any modern browser (Chrome, Edge, Firefox, Safari). No installation needed.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Log in with your credentials</h3>
+        <p>Use the email and temporary password provided. You will be prompted to change your password after first login.</p>
+        <code>Email:    admin@store.local
+Password: (provided by your administrator)</code>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Configure your restaurant settings</h3>
+        <p>Go to <strong>Settings → Restaurant Settings</strong> and fill in your business name, address, and upload your logo. This appears on the login screen and receipts.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>Add your product categories</h3>
+        <p>Go to <strong>Products → Categories</strong> and create the categories that match your menu (e.g. Liquor, Beer, Food, Soft Drinks).</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h3>Add your products</h3>
+        <p>Go to <strong>Products</strong> and click <strong>Add Product</strong>. Fill in name, SKU, category, selling price, stock quantity, and optionally upload an image.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <h3>Create your staff accounts</h3>
+        <p>Go to <strong>Settings → Users</strong> and add your cashiers, managers, and store keepers with their roles and branch assignment.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-body">
+        <h3>Start taking orders</h3>
+        <p>Click <strong>New Bill</strong> in the sidebar. Select a table or customer, add products by clicking cards or scanning barcodes, and press <strong>Complete Sale</strong>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── USER ROLES ────────────────────────────────────────────────── -->
+<section>
+  <div class="section-label">Access Control</div>
+  <div class="section-title">User roles &amp; permissions</div>
+  <div class="section-sub">Each user is assigned a role that controls what they can see and do in the system.</div>
+
+  <table class="creds-table">
+    <thead>
+      <tr>
+        <th>Role</th>
+        <th>Default Email</th>
+        <th>Access Level</th>
+        <th>Can Delete Transactions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-owner">Owner</span></td>
+        <td class="mono">owner@store.local</td>
+        <td>Full access — all branches, all modules</td>
+        <td>✓</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-admin">Admin</span></td>
+        <td class="mono">admin@store.local</td>
+        <td>Full access — all branches, all modules</td>
+        <td>✓</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-manager">Manager</span></td>
+        <td class="mono">manager@store.local</td>
+        <td>Own branch — sales, products, purchases, reports</td>
+        <td>✗</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-cashier">Cashier</span></td>
+        <td class="mono">cashier@store.local</td>
+        <td>Own branch — POS billing and sales only</td>
+        <td>✗</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-keeper">Store Keeper</span></td>
+        <td class="mono">keeper@store.local</td>
+        <td>Own branch — stock, GRN, damages, purchases</td>
+        <td>✗</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="notice">
+    <span class="icon">⚠️</span>
+    <span>All default passwords are <strong>password</strong>. Please change every account password immediately after first login via <strong>Settings → Users</strong>.</span>
+  </div>
+</section>
+
+<!-- ── TENANT API (for technical admins) ─────────────────────────── -->
+<section>
+  <div class="section-label">For Administrators</div>
+  <div class="section-title">Provisioning new tenants via API</div>
+  <div class="section-sub">If you manage multiple businesses on this platform, use the API to provision each new client automatically — no server access required.</div>
+
+  <div class="api-box">
+<span class="comment"># Create a new tenant (database + migrations + users)</span>
+<span class="method">POST</span> <span class="url">https://yourserver.com/api/tenants</span>
+
+<span class="comment">Headers:</span>
+  <span class="key">Content-Type</span>: <span class="val">application/json</span>
+  <span class="key">X-Tenant-Key</span>: <span class="val">your-master-secret-key</span>
+
+<span class="comment">Body:</span>
+  {
+    <span class="key">"domain"</span>:   <span class="val">"shop1.example.com"</span>,
+    <span class="key">"database"</span>: <span class="val">"lmuc_shop1"</span>,
+    <span class="key">"password"</span>: <span class="val">"SecurePass123"</span>
+  }
+
+<span class="comment">Response 201:</span>
+  {
+    <span class="key">"message"</span>:        <span class="val">"Tenant created successfully."</span>,
+    <span class="key">"login_email"</span>:   <span class="val">"admin@store.local"</span>,
+    <span class="key">"login_password"</span>: <span class="val">"SecurePass123"</span>
+  }</div>
+</section>
+</div><!-- /container -->
+
+<!-- ── FOOTER ────────────────────────────────────────────────────── -->
+<footer>
+  <div>
+    <strong>LMUC POS &amp; Business Management System</strong><br>
+    Confidential — for customer use only
+  </div>
+  <div style="text-align:right;">
+    Generated: <script>document.write(new Date().toLocaleDateString('en-LK',{year:'numeric',month:'long',day:'numeric'}))</script><br>
+    Version 1.0
+  </div>
+</footer>
+
+</body>
+</html>
