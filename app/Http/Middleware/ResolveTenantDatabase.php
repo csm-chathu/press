@@ -20,11 +20,9 @@ class ResolveTenantDatabase
             // Switch the active database for this request
             config(['database.connections.mysql.database' => $database]);
             DB::purge('mysql');
-        } else {
-            // Unknown domain — reject with a clear error rather than
-            // silently serving another tenant's data
-            abort(404, "No database configured for host: {$host}");
         }
+        // Unknown host: fall through using the default DB_DATABASE from .env
+        // (the default mysql connection is already set to DB_DATABASE)
 
         return $next($request);
     }

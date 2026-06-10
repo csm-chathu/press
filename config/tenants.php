@@ -20,6 +20,6 @@ return [
     '127.0.0.1' => 'press',
     'restaurant.lumac.lk' => 'lmucunal_restaurant',
     'daily-dose.lumac.lk' => 'lmucunal_daily-dose',
-    // 'shop1.yourdomain.com' => 'lmuc_shop1',
+    'press.lumac.lk' => 'lmucunal_press',
     // 'shop2.yourdomain.com' => 'lmuc_shop2',
 ];
