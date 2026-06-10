@@ -17,6 +17,6 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login',  [App\Http\Controllers\Auth\AuthController::class, 'login']);
 Route::post('/logout', [App\Http\Controllers\Auth\AuthController::class, 'logout'])->middleware('auth:sanctum');
 
-// SPA catch-all — explicit root + wildcard
-Route::get('/', fn () => view('app'));
-Route::get('/{any}', fn () => view('app'))->where('any', '.*');
+// SPA catch-all — Route::view() is serializable, works with route:cache
+Route::view('/', 'app');
+Route::view('/{any}', 'app')->where('any', '.*');
