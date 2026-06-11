@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +17,10 @@ class Quotation extends Model
         'title',
         'product_type',
         'paper_type',
+        'paper_product_id',
+        'ink_product_id',
+        'plate_product_id',
+        'paper_sheets_needed',
         'gsm',
         'size',
         'width_mm',
@@ -68,6 +73,21 @@ class Quotation extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function paperProduct(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'paper_product_id');
+    }
+
+    public function inkProduct(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'ink_product_id');
+    }
+
+    public function plateProduct(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'plate_product_id');
     }
 
     public function createdBy(): BelongsTo

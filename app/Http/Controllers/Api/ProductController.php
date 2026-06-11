@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Support\CloudinaryService;
+use App\Support\StockLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -26,6 +27,7 @@ class ProductController extends Controller
             }))
             ->when(request('category_id'), fn($q, $c) => $q->where('category_id', $c))
             ->when(request('product_type'), fn($q, $type) => $q->where('product_type', $type))
+            ->when(request('material_type'), fn($q, $mt) => $q->where('material_type', $mt))
             ->when(request('low_stock'), fn($q) => $q->whereColumn('stock_quantity', '<=', 'min_stock_level'))
             ->latest()
             ->paginate(request('per_page', 20));
@@ -35,33 +37,28 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'                    => 'required|string|max:200',
-            'description'             => 'nullable|string',
-            'category_id'             => 'required|exists:categories,id',
-            'product_type'            => 'required|string|max:50',
-            'brand'                   => 'nullable|string|max:100',
-            'unit_type'               => 'nullable|string|max:50',
-            'base_unit'               => 'nullable|string|max:50',
-            'selling_variants'        => 'nullable|string',
-            'shot_variants'           => 'nullable|string',
-            'purchase_price'          => 'required|numeric|min:0',
-            'selling_price'           => 'required|numeric|min:0',
-            'stock_quantity'          => 'required|integer|min:0',
-            'min_stock_level'         => 'required|integer|min:0',
-            'is_active'               => 'boolean',
-            'bottle_deposit_required' => 'boolean',
-            'bottle_deposit_amount'   => 'nullable|numeric|min:0',
-            'supplier_id'             => 'nullable|exists:suppliers,id',
-            'tax_setting_id'          => 'nullable|exists:tax_settings,id',
-            'barcode'                 => 'nullable|string|max:100|unique:products,barcode',
-            'image'                   => 'nullable|image|max:2048',
+            'name'          => 'required|string|max:200',
+            'description'   => 'nullable|string',
+            'category_id'   => 'required|exists:categories,id',
+            'product_type'  => 'nullable|string|max:50',
+            'material_type' => 'nullable|string|in:paper,ink,plate,chemical,packaging,other',
+            'gsm'           => 'nullable|integer|min:1',
+            'paper_size'    => 'nullable|string|max:20',
+            'bundle_size'   => 'nullable|integer|min:0',
+            'base_unit'     => 'nullable|string|max:50',
+            'purchase_price'  => 'required|numeric|min:0',
+            'selling_price'   => 'required|numeric|min:0',
+            'stock_quantity'  => 'required|integer|min:0',
+            'min_stock_level' => 'nullable|integer|min:0',
+            'is_active'     => 'boolean',
+            'supplier_id'   => 'nullable|exists:suppliers,id',
+            'barcode'       => 'nullable|string|max:100|unique:products,barcode',
+            'image'         => 'nullable|image|max:2048',
         ]);
 
-        $data['sku'] = 'NEW-' . uniqid('', true); // temp unique; replaced below with numeric ID
+        $data['sku'] = 'NEW-' . uniqid('', true);
         $data['branch_id'] = $request->user()->branch_id;
-        $data['selling_variants'] = isset($data['selling_variants']) ? trim($data['selling_variants']) : null;
-        $data['shot_variants'] = json_decode($request->input('shot_variants', '[]'), true) ?? [];
-        $data['bottle_deposit_required'] = $request->boolean('bottle_deposit_required');
+        $data['product_type'] = $data['product_type'] ?? 'product';
         $data['is_active'] = $request->boolean('is_active', true);
 
         if ($request->hasFile('image')) {
@@ -72,6 +69,21 @@ class ProductController extends Controller
 
         $product = Product::create($data);
         $product->update(['sku' => str_pad($product->id, 6, '0', STR_PAD_LEFT)]);
+        $product->refresh();
+
+        if ($product->stock_quantity > 0) {
+            StockLedger::record(
+                $product,
+                'IN',
+                $product->stock_quantity,
+                $request->user()->id,
+                $request->user()->branch_id,
+                'OPENING',
+                null,
+                'Opening stock on product creation'
+            );
+        }
+
         return response()->json($product->fresh(), 201);
     }
 
@@ -83,31 +95,25 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $data = $request->validate([
-            'name'                    => 'required|string|max:200',
-            'description'             => 'nullable|string',
-            'category_id'             => 'required|exists:categories,id',
-            'product_type'            => 'required|string|max:50',
-            'brand'                   => 'nullable|string|max:100',
-            'unit_type'               => 'nullable|string|max:50',
-            'base_unit'               => 'nullable|string|max:50',
-            'selling_variants'        => 'nullable|string',
-            'shot_variants'           => 'nullable|string',
-            'purchase_price'          => 'required|numeric|min:0',
-            'selling_price'           => 'required|numeric|min:0',
-            'stock_quantity'          => 'required|integer|min:0',
-            'min_stock_level'         => 'required|integer|min:0',
-            'is_active'               => 'boolean',
-            'bottle_deposit_required' => 'boolean',
-            'bottle_deposit_amount'   => 'nullable|numeric|min:0',
-            'supplier_id'             => 'nullable|exists:suppliers,id',
-            'tax_setting_id'          => 'nullable|exists:tax_settings,id',
-            'barcode'                 => 'nullable|string|max:100|unique:products,barcode,' . $product->id,
-            'image'                   => 'nullable|image|max:2048',
+            'name'          => 'required|string|max:200',
+            'description'   => 'nullable|string',
+            'category_id'   => 'required|exists:categories,id',
+            'product_type'  => 'nullable|string|max:50',
+            'material_type' => 'nullable|string|in:paper,ink,plate,chemical,packaging,other',
+            'gsm'           => 'nullable|integer|min:1',
+            'paper_size'    => 'nullable|string|max:20',
+            'bundle_size'   => 'nullable|integer|min:0',
+            'base_unit'     => 'nullable|string|max:50',
+            'purchase_price'  => 'required|numeric|min:0',
+            'selling_price'   => 'required|numeric|min:0',
+            'stock_quantity'  => 'required|integer|min:0',
+            'min_stock_level' => 'nullable|integer|min:0',
+            'is_active'     => 'boolean',
+            'supplier_id'   => 'nullable|exists:suppliers,id',
+            'barcode'       => 'nullable|string|max:100|unique:products,barcode,' . $product->id,
+            'image'         => 'nullable|image|max:2048',
         ]);
 
-        $data['selling_variants'] = isset($data['selling_variants']) ? trim($data['selling_variants']) : null;
-        $data['shot_variants'] = json_decode($request->input('shot_variants', '[]'), true) ?? [];
-        $data['bottle_deposit_required'] = $request->boolean('bottle_deposit_required');
         $data['is_active'] = $request->boolean('is_active', true);
 
         if ($request->hasFile('image')) {
@@ -121,7 +127,24 @@ class ProductController extends Controller
             $data['image_public_id'] = $uploaded['public_id'];
         }
 
+        $previousQty = (float) $product->stock_quantity;
         $product->update($data);
+
+        $newQty = (float) $product->fresh()->stock_quantity;
+        $diff   = $newQty - $previousQty;
+        if ($diff != 0) {
+            StockLedger::record(
+                $product->fresh(),
+                $diff > 0 ? 'IN' : 'OUT',
+                abs($diff),
+                $request->user()->id,
+                $request->user()->branch_id,
+                'ADJUSTMENT',
+                $product->id,
+                'Manual stock adjustment via product edit'
+            );
+        }
+
         return response()->json($product->fresh(['category', 'supplier']));
     }
 

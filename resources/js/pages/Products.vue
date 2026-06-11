@@ -8,6 +8,15 @@
           <option value="">All categories</option>
           <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
+        <select v-model="materialFilter" class="form-input w-36" @change="resetAndFetch">
+          <option value="">All materials</option>
+          <option value="paper">Paper / Board</option>
+          <option value="ink">Ink</option>
+          <option value="plate">Plate / Film</option>
+          <option value="chemical">Chemical</option>
+          <option value="packaging">Packaging</option>
+          <option value="other">Other</option>
+        </select>
         <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
           <input type="checkbox" v-model="lowStockOnly" @change="resetAndFetch" class="rounded text-gold-600" />
           Low stock only
@@ -36,12 +45,13 @@
               <th class="table-th">Image</th>
               <th class="table-th">SKU</th>
               <th class="table-th">Name</th>
-              <th class="table-th">Brand</th>
+              <th class="table-th">Material</th>
               <th class="table-th">Category</th>
-              <th class="table-th">Unit / Base</th>
+              <th class="table-th">GSM / Size</th>
+              <th class="table-th">Unit</th>
               <th class="table-th">Stock</th>
+              <th class="table-th">Bundle</th>
               <th class="table-th">Sell Price (LKR)</th>
-              <th class="table-th">Deposit</th>
               <th class="table-th">Status</th>
               <th class="table-th sticky right-0 bg-gray-50 border-l border-gray-200">Actions</th>
             </tr>
@@ -56,21 +66,27 @@
               </td>
               <td class="table-td font-mono text-xs">{{ p.sku }}</td>
               <td class="table-td font-medium">{{ p.name }}</td>
-              <td class="table-td text-gray-500">{{ p.brand || '—' }}</td>
+              <td class="table-td">
+                <span :class="materialBadge(p.material_type).cls" class="badge capitalize text-xs">
+                  {{ materialBadge(p.material_type).label }}
+                </span>
+              </td>
               <td class="table-td text-gray-500">{{ p.category?.name }}</td>
-              <td class="table-td">{{ [p.unit_type, p.base_unit].filter(Boolean).join(' / ') || '—' }}</td>
+              <td class="table-td text-gray-600 text-xs">
+                <span v-if="p.gsm || p.paper_size">{{ [p.gsm ? p.gsm+'gsm' : '', p.paper_size].filter(Boolean).join(' · ') }}</span>
+                <span v-else class="text-gray-300">—</span>
+              </td>
+              <td class="table-td text-gray-500 text-xs">{{ p.base_unit || '—' }}</td>
               <td class="table-td">
                 <span :class="p.stock_quantity <= p.min_stock_level ? 'badge bg-red-100 text-red-700' : 'badge bg-green-100 text-green-700'">
                   {{ p.stock_quantity }}
                 </span>
               </td>
-              <td class="table-td font-semibold text-gold-700">{{ Number(p.selling_price).toLocaleString() }}</td>
-              <td class="table-td">
-                <span v-if="p.bottle_deposit_required" class="text-amber-700 font-medium">
-                  {{ Number(p.bottle_deposit_amount || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 }) }}
-                </span>
-                <span v-else class="text-gray-400">—</span>
+              <td class="table-td text-xs text-amber-700">
+                <span v-if="p.bundle_size">{{ p.bundle_size }}/bndl</span>
+                <span v-else class="text-gray-300">—</span>
               </td>
+              <td class="table-td font-semibold text-gold-700">{{ Number(p.selling_price).toLocaleString() }}</td>
               <td class="table-td">
                 <span :class="p.is_active ? 'badge bg-green-100 text-green-700' : 'badge bg-gray-100 text-gray-500'">
                   {{ p.is_active ? 'Active' : 'Inactive' }}
@@ -101,7 +117,7 @@
               </td>
             </tr>
             <tr v-if="!products.data?.length">
-              <td colspan="11" class="table-td text-center text-gray-400 py-8">No products found</td>
+              <td colspan="12" class="table-td text-center text-gray-400 py-8">No products found</td>
             </tr>
           </tbody>
         </table>
@@ -154,12 +170,23 @@ import JsBarcode from 'jsbarcode'
 import ProductModal from '@/components/ProductModal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 
+const MATERIAL_BADGES = {
+  paper:     { label: 'Paper',     cls: 'bg-blue-100 text-blue-700' },
+  ink:       { label: 'Ink',       cls: 'bg-purple-100 text-purple-700' },
+  plate:     { label: 'Plate',     cls: 'bg-gray-200 text-gray-700' },
+  chemical:  { label: 'Chemical',  cls: 'bg-yellow-100 text-yellow-700' },
+  packaging: { label: 'Packaging', cls: 'bg-orange-100 text-orange-700' },
+  other:     { label: 'Other',     cls: 'bg-gray-100 text-gray-500' },
+}
+function materialBadge(type) { return MATERIAL_BADGES[type] ?? MATERIAL_BADGES.other }
+
 const products      = ref({ data: [] })
 const categories    = ref([])
 const suppliers     = ref([])
 const taxes         = ref([])
 const search        = ref('')
 const categoryFilter = ref('')
+const materialFilter = ref('')
 const lowStockOnly  = ref(false)
 const page          = ref(1)
 const showModal     = ref(false)
@@ -182,7 +209,7 @@ function debouncedFetch() {
 async function fetchProducts() {
   loading.value = true
   try {
-    const params = { page: page.value, search: search.value, category_id: categoryFilter.value }
+    const params = { page: page.value, search: search.value, category_id: categoryFilter.value, material_type: materialFilter.value }
     if (lowStockOnly.value) params.low_stock = 1
     const { data } = await axios.get('/api/products', { params })
     products.value = data

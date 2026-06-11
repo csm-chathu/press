@@ -190,6 +190,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/open-bottles/{openBottle}/pour', [OpenBottleController::class, 'pour']);
     Route::post('/open-bottles/{openBottle}/close', [OpenBottleController::class, 'close']);
 
+    // Paper bundle tracking
+    Route::get('/open-bundles',                          [\App\Http\Controllers\Api\OpenBundleController::class, 'index']);
+    Route::get('/open-bundles/summary',                  [\App\Http\Controllers\Api\OpenBundleController::class, 'summary']);
+    Route::post('/open-bundles/open',                    [\App\Http\Controllers\Api\OpenBundleController::class, 'open']);
+    Route::post('/open-bundles/{openBundle}/use',        [\App\Http\Controllers\Api\OpenBundleController::class, 'use']);
+    Route::post('/open-bundles/{openBundle}/close',      [\App\Http\Controllers\Api\OpenBundleController::class, 'close']);
+
     // Bottle deposit management
     Route::get('/bottle-deposits', [BottleDepositController::class, 'index']);
     Route::get('/bottle-deposits/summary', [BottleDepositController::class, 'summary']);
@@ -218,6 +225,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/quotations/{quotation}/pdf',           [QuotationController::class, 'downloadPdf']);
     Route::post('/quotations/{quotation}/convert',      [QuotationController::class, 'convert']);
     Route::apiResource('quotations',                    QuotationController::class);
+
+    // ── Paper Yield Calculator ─────────────────────────────────────
+    Route::get('/tools/paper-sizes',   [\App\Http\Controllers\Api\PaperYieldController::class, 'sizes']);
+    Route::post('/tools/paper-yield',  [\App\Http\Controllers\Api\PaperYieldController::class, 'calculate']);
 
     // ── Client Portal ──────────────────────────────────────────────
     Route::prefix('portal')->group(function () {

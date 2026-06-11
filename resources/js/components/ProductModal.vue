@@ -1,146 +1,133 @@
 <template>
-  <!-- Modal backdrop -->
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between px-6 py-4 border-b">
         <h3 class="text-lg font-semibold">{{ product ? 'Edit Product' : 'Add Product' }}</h3>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">✕</button>
+        <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
       </div>
 
-      <form @submit.prevent="submit" class="overflow-y-auto p-6 space-y-4">
+      <form @submit.prevent="submit" class="overflow-y-auto p-6 space-y-5">
+
+        <!-- Basic Info -->
         <div class="grid grid-cols-2 gap-4">
           <div class="col-span-2">
             <label class="form-label">Name *</label>
-            <input v-model="form.name" required class="form-input" />
+            <input v-model="form.name" required class="form-input w-full" placeholder="e.g. Art Paper 128gsm A3" />
           </div>
+
           <div v-if="product">
             <label class="form-label">SKU</label>
-            <input :value="product.sku" readonly class="form-input font-mono bg-gray-50 text-gray-500 cursor-not-allowed" />
+            <input :value="product.sku" readonly class="form-input w-full font-mono bg-gray-50 text-gray-400 cursor-not-allowed" />
           </div>
-          <div>
-            <label class="form-label">Custom Barcode <span class="text-gray-400 font-normal">(optional override)</span></label>
-            <input v-model="form.barcode" class="form-input font-mono" placeholder="Scan or type barcode — leave blank to use SKU" />
-          </div>
-          <div class="col-span-2">
-            <label class="form-label mb-1">Type *</label>
-            <div class="flex rounded-lg border border-gray-200 overflow-hidden w-fit">
-              <button type="button"
-                @click="setTab('food')"
-                :class="activeTab === 'food'
-                  ? 'bg-amber-500 text-white font-semibold'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'"
-                class="px-6 py-2 text-sm transition-colors">
-                Food
-              </button>
-              <button type="button"
-                @click="setTab('other')"
-                :class="activeTab === 'other'
-                  ? 'bg-amber-500 text-white font-semibold'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'"
-                class="px-6 py-2 text-sm border-l border-gray-200 transition-colors">
-                Other
-              </button>
-            </div>
-          </div>
+
           <div>
             <label class="form-label">Category *</label>
-            <select v-model="form.category_id" required class="form-input">
+            <select v-model="form.category_id" required class="form-input w-full">
               <option value="" disabled>— Select —</option>
-              <option v-for="c in filteredCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
           </div>
-          <div v-if="!isFood">
+
+          <div>
             <label class="form-label">Supplier</label>
-            <select v-model="form.supplier_id" class="form-input">
+            <select v-model="form.supplier_id" class="form-input w-full">
               <option value="">— None —</option>
               <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
             </select>
           </div>
-          <div v-if="!isFood">
-            <label class="form-label">Brand</label>
-            <input v-model="form.brand" class="form-input" placeholder="e.g. Heineken, Glenfiddich" />
+        </div>
+
+        <!-- Material Type -->
+        <div>
+          <label class="form-label">Material Type *</label>
+          <div class="flex flex-wrap gap-2">
+            <button v-for="mt in materialTypes" :key="mt.value" type="button"
+              @click="form.material_type = mt.value"
+              :class="form.material_type === mt.value
+                ? 'bg-amber-500 text-white border-amber-500'
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'"
+              class="px-4 py-1.5 text-sm rounded-lg border font-medium transition-colors">
+              {{ mt.label }}
+            </button>
           </div>
-          <div v-if="!isFood">
-            <label class="form-label">Unit Type</label>
-            <select v-model="form.unit_type" class="form-input">
+        </div>
+
+        <!-- Paper-specific fields -->
+        <div v-if="isPaper" class="grid grid-cols-3 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+          <div>
+            <label class="form-label text-blue-700">GSM</label>
+            <input v-model.number="form.gsm" type="number" min="1" class="form-input w-full" placeholder="e.g. 170" />
+          </div>
+          <div>
+            <label class="form-label text-blue-700">Paper Size</label>
+            <select v-model="form.paper_size" class="form-input w-full">
               <option value="">— Select —</option>
-              <option v-for="u in unitTypes" :key="u" :value="u">{{ u }}</option>
+              <option v-for="s in paperSizes" :key="s" :value="s">{{ s }}</option>
             </select>
           </div>
-          <div v-if="!isFood">
+          <div>
+            <label class="form-label text-blue-700">Bundle Size <span class="font-normal text-gray-400">(sheets/bundle)</span></label>
+            <input v-model.number="form.bundle_size" type="number" min="0" class="form-input w-full" placeholder="e.g. 100, 500" />
+          </div>
+        </div>
+
+        <!-- Unit & Stock -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
             <label class="form-label">Base Unit</label>
-            <input v-model="form.base_unit" class="form-input" placeholder="e.g. 750ml, 24 bottles, 1 kg" />
-          </div>
-          <div v-if="!isFood">
-            <label class="form-label">Selling Variants</label>
-            <input v-model="form.selling_variants" class="form-input" placeholder="e.g. 30ml, 50ml, 750ml" />
-          </div>
-          <!-- Shot variants — for liquor categories or products that already have variants -->
-          <div v-if="isLiquor || form.shot_variants.length" class="col-span-2">
-            <div class="flex items-center justify-between mb-2">
-              <label class="form-label mb-0">Shot Variants</label>
-              <button type="button" @click="addShotVariant"
-                class="text-xs px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 font-semibold transition-colors">
-                + Add Variant
-              </button>
-            </div>
-            <div v-if="form.shot_variants.length" class="space-y-2">
-              <div v-for="(v, idx) in form.shot_variants" :key="idx" class="flex items-center gap-2">
-                <input v-model="v.name" class="form-input flex-1" placeholder="e.g. 30ml, 60ml, Single" />
-                <input v-model.number="v.price" type="number" step="0.01" min="0" class="form-input w-32" placeholder="LKR price" />
-                <button type="button" @click="form.shot_variants.splice(idx, 1)"
-                  class="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-500 rounded-lg transition-colors shrink-0">✕</button>
-              </div>
-            </div>
-            <p v-else class="text-xs text-gray-400 italic">No shot variants — add one above.</p>
-          </div>
-          <div>
-            <label class="form-label">Tax Setting</label>
-            <select v-model="form.tax_setting_id" class="form-input">
-              <option value="">— None —</option>
-              <option v-for="tax in taxes" :key="tax.id" :value="tax.id">{{ tax.name }} ({{ tax.rate }}%)</option>
+            <select v-model="form.base_unit" class="form-input w-full">
+              <option value="">— Select —</option>
+              <option v-for="u in baseUnits" :key="u" :value="u">{{ u }}</option>
             </select>
           </div>
-          <div v-if="!isFood">
-            <label class="form-label">Purchase Price (LKR) *</label>
-            <input v-model="form.purchase_price" type="number" step="0.01" min="0" :required="!isFood" class="form-input" />
+          <div>
+            <label class="form-label">Purchase Price (Rs.) *</label>
+            <input v-model.number="form.purchase_price" type="number" step="0.01" min="0" required class="form-input w-full" />
           </div>
           <div>
-            <label class="form-label">Selling Price (LKR) *</label>
-            <input v-model="form.selling_price" type="number" step="0.01" min="0" required class="form-input" />
+            <label class="form-label">Selling Price (Rs.) *</label>
+            <input v-model.number="form.selling_price" type="number" step="0.01" min="0" required class="form-input w-full" />
           </div>
-          <div v-if="!isFood">
+          <div>
             <label class="form-label">Stock Quantity *</label>
-            <input v-model="form.stock_quantity" type="number" min="0" :required="!isFood" class="form-input" />
-          </div>
-          <div>
-            <label class="form-label">Min Stock Level</label>
-            <input v-model="form.min_stock_level" type="number" min="0" class="form-input" />
-          </div>
-          <div class="col-span-2">
-            <label class="form-label">Description</label>
-            <textarea v-model="form.description" rows="2" class="form-input"></textarea>
-          </div>
-          <div class="col-span-2">
-            <label class="form-label">Product Image</label>
-            <input type="file" accept="image/*" class="form-input" @change="onImageChange" />
-            <div v-if="imagePreview || form.image" class="mt-2 flex items-center gap-3">
-              <img :src="imagePreview || form.image" alt="Product image" class="w-16 h-16 rounded-lg border border-gray-200 object-cover" />
-              <button type="button" class="btn-secondary py-1 px-3 text-xs" @click="clearImage">Remove</button>
+            <div class="flex gap-2">
+              <input v-model.number="form.stock_quantity" type="number" min="0" required class="form-input w-full" />
+              <span v-if="form.bundle_size && form.stock_quantity"
+                class="flex items-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 whitespace-nowrap">
+                {{ Math.floor(form.stock_quantity / form.bundle_size) }} bndl
+              </span>
             </div>
           </div>
-          <div class="col-span-2 flex items-center gap-2">
-            <input id="active" type="checkbox" v-model="form.is_active" class="rounded text-gold-600" />
-            <label for="active" class="text-sm text-gray-700">Active</label>
+          <div>
+            <label class="form-label">Min Stock Level <span class="font-normal text-gray-400">(reorder at)</span></label>
+            <input v-model.number="form.min_stock_level" type="number" min="0" class="form-input w-full" />
           </div>
-          <div v-if="!isFood" class="col-span-2 flex items-center gap-2">
-            <input id="deposit" type="checkbox" v-model="form.bottle_deposit_required" class="rounded text-gold-600" />
-            <label for="deposit" class="text-sm text-gray-700">Bottle deposit required</label>
+          <div>
+            <label class="form-label">Custom Barcode <span class="font-normal text-gray-400">(optional)</span></label>
+            <input v-model="form.barcode" class="form-input w-full font-mono" placeholder="Scan or leave blank to use SKU" />
           </div>
-          <div v-if="!isFood && form.bottle_deposit_required">
-            <label class="form-label">Empty Bottle Deposit Amount (LKR) *</label>
-            <input v-model.number="form.bottle_deposit_amount" type="number" step="0.01" min="0" required class="form-input" placeholder="0.00" />
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="form-label">Description</label>
+          <textarea v-model="form.description" rows="2" class="form-input w-full" placeholder="Optional notes about this material"></textarea>
+        </div>
+
+        <!-- Image -->
+        <div>
+          <label class="form-label">Product Image</label>
+          <input type="file" accept="image/*" class="form-input w-full" @change="onImageChange" />
+          <div v-if="imagePreview || form.image" class="mt-2 flex items-center gap-3">
+            <img :src="imagePreview || form.image" alt="preview" class="w-16 h-16 rounded-lg border border-gray-200 object-cover" />
+            <button type="button" class="text-xs text-red-500 hover:text-red-700" @click="clearImage">Remove</button>
           </div>
+        </div>
+
+        <!-- Active -->
+        <div class="flex items-center gap-2">
+          <input id="active" type="checkbox" v-model="form.is_active" class="rounded" />
+          <label for="active" class="text-sm text-gray-700">Active</label>
         </div>
 
         <p v-if="error" class="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{{ error }}</p>
@@ -155,77 +142,63 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, watch, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({ product: Object, categories: Array, suppliers: Array, taxes: Array })
 const emit  = defineEmits(['close', 'saved'])
 
-const unitTypes = ['Bottle', 'Can', 'Pack', 'Glass', 'Case', 'Plate', 'Serving']
+const materialTypes = [
+  { value: 'paper',     label: 'Paper / Board' },
+  { value: 'ink',       label: 'Ink' },
+  { value: 'plate',     label: 'Plate / Film' },
+  { value: 'chemical',  label: 'Chemical' },
+  { value: 'packaging', label: 'Packaging' },
+  { value: 'other',     label: 'Other' },
+]
 
-const FOOD_CATEGORY_NAMES = ['food', 'snacks']
+const paperSizes = ['A0','A1','A2','A3','A4','A5','A6','SRA3','SRA2','SRA1','B0','B1','B2','B3','B4','B5']
 
-const activeTab = ref('other')
+const baseUnits = ['sheet','pcs','kg','tin','can','bottle','roll','drum','ream','box','pack','set']
 
-const isFood = computed(() => activeTab.value === 'food')
-
-const filteredCategories = computed(() => props.categories ?? [])
-
-function setTab(tab) {
-  if (activeTab.value === tab) return
-  activeTab.value = tab
-  form.category_id = ''
-}
-
-const isLiquor = computed(() => {
-  const cat = (props.categories ?? []).find(c => c.id === form.category_id)
-  return !!cat?.enable_variants
-})
-
-const CATEGORY_TYPE_MAP = {
-  'liquor': 'Liquor', 'hard liquor': 'Liquor', 'foreign liquor': 'Liquor',
-  'hard-liquor': 'Liquor', 'foreign-liquor': 'Liquor',
-  'beer': 'Beer', 'soft drinks': 'Soft Drinks',
-  'soft-drinks': 'Soft Drinks', 'food': 'Food', 'snacks': 'Food', 'accessories': 'Accessories',
-}
+const isPaper = computed(() => form.material_type === 'paper')
 
 const form = reactive({
-  name: '', description: '', category_id: '', supplier_id: '', tax_setting_id: '',
-  product_type: 'Liquor', brand: '', unit_type: '', base_unit: '', selling_variants: '',
-  shot_variants: [],
-  purchase_price: '', selling_price: '', stock_quantity: 0, min_stock_level: 5,
-  bottle_deposit_required: false, bottle_deposit_amount: 0, is_active: true, barcode: '',
+  name: '', description: '', category_id: '', supplier_id: '',
+  material_type: 'paper',
+  gsm: null, paper_size: '', bundle_size: 0,
+  base_unit: 'sheet',
+  purchase_price: '', selling_price: '',
+  stock_quantity: 0, min_stock_level: 0,
+  product_type: 'product',
+  is_active: true, barcode: '',
 })
 
-const saving = ref(false)
-const error  = ref('')
-const imageFile = ref(null)
+const saving      = ref(false)
+const error       = ref('')
+const imageFile   = ref(null)
 const imagePreview = ref('')
-
-watch(isFood, (val) => {
-  if (val) {
-    form.stock_quantity = 1000
-    form.purchase_price = form.selling_price
-  }
-})
-
-watch(() => form.selling_price, (val) => {
-  if (isFood.value) form.purchase_price = val
-})
 
 onMounted(() => {
   if (props.product) {
-    const cat = (props.categories ?? []).find(c => c.id === props.product.category_id)
-    activeTab.value = FOOD_CATEGORY_NAMES.includes((cat?.name ?? '').toLowerCase()) ? 'food' : 'other'
-    Object.assign(form, props.product)
-    form.selling_variants = Array.isArray(props.product.selling_variants)
-      ? props.product.selling_variants.join(', ')
-      : (props.product.selling_variants ?? '')
-    let sv = props.product.shot_variants
-    if (typeof sv === 'string') { try { sv = JSON.parse(sv) } catch { sv = [] } }
-    form.shot_variants = Array.isArray(sv)
-      ? sv.map(v => ({ name: v.name ?? '', price: v.price ?? '' }))
-      : []
+    Object.assign(form, {
+      name:           props.product.name          ?? '',
+      description:    props.product.description   ?? '',
+      category_id:    props.product.category_id   ?? '',
+      supplier_id:    props.product.supplier_id    ?? '',
+      material_type:  props.product.material_type  ?? 'other',
+      gsm:            props.product.gsm            ?? null,
+      paper_size:     props.product.paper_size     ?? '',
+      bundle_size:    props.product.bundle_size    ?? 0,
+      base_unit:      props.product.base_unit      ?? 'sheet',
+      purchase_price: props.product.purchase_price ?? '',
+      selling_price:  props.product.selling_price  ?? '',
+      stock_quantity: props.product.stock_quantity ?? 0,
+      min_stock_level:props.product.min_stock_level ?? 0,
+      product_type:   props.product.product_type  ?? 'product',
+      is_active:      props.product.is_active      ?? true,
+      barcode:        props.product.barcode        ?? '',
+    })
   }
 })
 
@@ -233,38 +206,30 @@ async function submit() {
   saving.value = true
   error.value  = ''
   try {
-    const cat = (props.categories ?? []).find(c => c.id === form.category_id)
-    const derivedType = CATEGORY_TYPE_MAP[(cat?.name ?? '').toLowerCase()] ?? 'Accessories'
-    const payload = {
-      ...form,
-      product_type: derivedType,
-      selling_variants: form.selling_variants ? form.selling_variants.split(',').map(v => v.trim()).filter(Boolean).join(', ') : '',
-      shot_variants: JSON.stringify(form.shot_variants.filter(v => v.name)),
-    }
     const formData = new FormData()
-    Object.entries(payload).forEach(([key, value]) => {
-      if (value === null || value === undefined) return
-      if (key === 'image') return  // only send image when a new file is chosen
-      if (key === 'is_active' || key === 'bottle_deposit_required') {
-        formData.append(key, value ? '1' : '0')
-        return
-      }
-      formData.append(key, value)
+    const fields = [
+      'name','description','category_id','supplier_id','material_type',
+      'gsm','paper_size','bundle_size','base_unit',
+      'purchase_price','selling_price','stock_quantity','min_stock_level',
+      'product_type','barcode',
+    ]
+    fields.forEach(k => {
+      const v = form[k]
+      if (v !== null && v !== undefined && v !== '') formData.append(k, v)
     })
-    if (imageFile.value) {
-      formData.append('image', imageFile.value)
-    }
+    formData.append('is_active', form.is_active ? '1' : '0')
+    if (imageFile.value) formData.append('image', imageFile.value)
 
-    let savedProduct
+    let saved
     if (props.product) {
       formData.append('_method', 'PUT')
       const { data } = await axios.post(`/api/products/${props.product.id}`, formData)
-      savedProduct = data
+      saved = data
     } else {
       const { data } = await axios.post('/api/products', formData)
-      savedProduct = data
+      saved = data
     }
-    emit('saved', { product: savedProduct, isNew: !props.product })
+    emit('saved', { product: saved, isNew: !props.product })
   } catch (e) {
     const errs = e.response?.data?.errors
     error.value = errs ? Object.values(errs).flat().join(', ') : (e.response?.data?.message ?? 'Error saving')
@@ -273,18 +238,14 @@ async function submit() {
   }
 }
 
-function addShotVariant() {
-  form.shot_variants.push({ name: '', price: '' })
-}
-
-function onImageChange(event) {
-  const file = event.target.files?.[0]
-  imageFile.value = file || null
+function onImageChange(e) {
+  const file = e.target.files?.[0]
+  imageFile.value    = file || null
   imagePreview.value = file ? URL.createObjectURL(file) : ''
 }
 
 function clearImage() {
-  imageFile.value = null
+  imageFile.value    = null
   imagePreview.value = ''
 }
 </script>

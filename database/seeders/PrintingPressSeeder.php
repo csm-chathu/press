@@ -13,6 +13,7 @@ use App\Models\QuotationItem;
 use App\Models\Sale;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Support\StockLedger;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -109,11 +110,11 @@ class PrintingPressSeeder extends Seeder
         // ── Raw Materials / Products ─────────────────────────────────
         $materials = [
             // Paper & Board
-            ['name' => 'Art Paper 128gsm A3',     'sku' => 'PAP-128-A3', 'category' => 'Paper & Board',    'purchase_price' => 45,   'selling_price' => 60,   'stock_quantity' => 5000, 'reorder_level' => 500, 'material_type' => 'paper',  'gsm' => '128', 'paper_size' => 'A3'],
-            ['name' => 'Art Paper 170gsm A4',     'sku' => 'PAP-170-A4', 'category' => 'Paper & Board',    'purchase_price' => 55,   'selling_price' => 75,   'stock_quantity' => 3000, 'reorder_level' => 300, 'material_type' => 'paper',  'gsm' => '170', 'paper_size' => 'A4'],
-            ['name' => 'Bond Paper 80gsm',        'sku' => 'BON-080',    'category' => 'Paper & Board',    'purchase_price' => 28,   'selling_price' => 40,   'stock_quantity' => 8000, 'reorder_level' => 800, 'material_type' => 'paper',  'gsm' => '80',  'paper_size' => 'A4'],
-            ['name' => 'Cardboard 300gsm',        'sku' => 'CAR-300',    'category' => 'Paper & Board',    'purchase_price' => 95,   'selling_price' => 130,  'stock_quantity' => 2000, 'reorder_level' => 200, 'material_type' => 'paper',  'gsm' => '300', 'paper_size' => 'A3'],
-            ['name' => 'Glossy Coated 200gsm',   'sku' => 'GLS-200',    'category' => 'Paper & Board',    'purchase_price' => 80,   'selling_price' => 110,  'stock_quantity' => 1500, 'reorder_level' => 150, 'material_type' => 'paper',  'gsm' => '200', 'paper_size' => 'A4'],
+            ['name' => 'Art Paper 128gsm A3',     'sku' => 'PAP-128-A3', 'category' => 'Paper & Board',    'purchase_price' => 45,   'selling_price' => 60,   'stock_quantity' => 5000, 'reorder_level' => 500, 'material_type' => 'paper',  'gsm' => '128', 'paper_size' => 'A3', 'bundle_size' => 100],
+            ['name' => 'Art Paper 170gsm A4',     'sku' => 'PAP-170-A4', 'category' => 'Paper & Board',    'purchase_price' => 55,   'selling_price' => 75,   'stock_quantity' => 3000, 'reorder_level' => 300, 'material_type' => 'paper',  'gsm' => '170', 'paper_size' => 'A4', 'bundle_size' => 100],
+            ['name' => 'Bond Paper 80gsm',        'sku' => 'BON-080',    'category' => 'Paper & Board',    'purchase_price' => 28,   'selling_price' => 40,   'stock_quantity' => 8000, 'reorder_level' => 800, 'material_type' => 'paper',  'gsm' => '80',  'paper_size' => 'A4', 'bundle_size' => 500],
+            ['name' => 'Cardboard 300gsm',        'sku' => 'CAR-300',    'category' => 'Paper & Board',    'purchase_price' => 95,   'selling_price' => 130,  'stock_quantity' => 2000, 'reorder_level' => 200, 'material_type' => 'paper',  'gsm' => '300', 'paper_size' => 'A3', 'bundle_size' => 100],
+            ['name' => 'Glossy Coated 200gsm',   'sku' => 'GLS-200',    'category' => 'Paper & Board',    'purchase_price' => 80,   'selling_price' => 110,  'stock_quantity' => 1500, 'reorder_level' => 150, 'material_type' => 'paper',  'gsm' => '200', 'paper_size' => 'A4', 'bundle_size' => 100],
             // Inks
             ['name' => 'CMYK Offset Ink Set',    'sku' => 'INK-CMY',    'category' => 'Inks & Chemicals',  'purchase_price' => 8500, 'selling_price' => 11000,'stock_quantity' => 20,   'reorder_level' => 5,   'material_type' => 'ink',    'base_unit' => 'kg'],
             ['name' => 'Black Offset Ink 2.5kg', 'sku' => 'INK-BLK',   'category' => 'Inks & Chemicals',  'purchase_price' => 1800, 'selling_price' => 2400, 'stock_quantity' => 15,   'reorder_level' => 4,   'material_type' => 'ink',    'base_unit' => 'tin'],
@@ -132,25 +133,42 @@ class PrintingPressSeeder extends Seeder
 
         foreach ($materials as $mat) {
             $category = $catMap[$mat['category']];
-            Product::firstOrCreate(
-                ['sku' => $mat['sku'], 'branch_id' => $branch->id],
-                [
-                    'name'           => $mat['name'],
-                    'category_id'    => $category->id,
-                    'branch_id'      => $branch->id,
-                    'purchase_price' => $mat['purchase_price'],
-                    'selling_price'  => $mat['selling_price'],
-                    'stock_quantity' => $mat['stock_quantity'],
-                    'min_stock_level'=> $mat['reorder_level'] ?? 0,
-                    'reorder_level'  => $mat['reorder_level'] ?? 0,
-                    'base_unit'      => $mat['base_unit'] ?? 'sheet',
-                    'product_type'   => 'product',
-                    'material_type'  => $mat['material_type'],
-                    'gsm'            => $mat['gsm'] ?? null,
-                    'paper_size'     => $mat['paper_size'] ?? null,
-                    'is_active'      => true,
-                ]
-            );
+            [$product, $created] = [
+                Product::firstOrCreate(
+                    ['sku' => $mat['sku'], 'branch_id' => $branch->id],
+                    [
+                        'name'           => $mat['name'],
+                        'category_id'    => $category->id,
+                        'branch_id'      => $branch->id,
+                        'purchase_price' => $mat['purchase_price'],
+                        'selling_price'  => $mat['selling_price'],
+                        'stock_quantity' => $mat['stock_quantity'],
+                        'min_stock_level'=> $mat['reorder_level'] ?? 0,
+                        'reorder_level'  => $mat['reorder_level'] ?? 0,
+                        'base_unit'      => $mat['base_unit'] ?? 'sheet',
+                        'product_type'   => 'product',
+                        'material_type'  => $mat['material_type'],
+                        'gsm'            => $mat['gsm'] ?? null,
+                        'paper_size'     => $mat['paper_size'] ?? null,
+                        'bundle_size'    => $mat['bundle_size'] ?? 0,
+                        'is_active'      => true,
+                    ]
+                ),
+                null,
+            ];
+            // Check if this was a newly created product (wasRecentlyCreated)
+            if ($product->wasRecentlyCreated && $mat['stock_quantity'] > 0) {
+                StockLedger::record(
+                    $product,
+                    'IN',
+                    $mat['stock_quantity'],
+                    $admin->id,
+                    $branch->id,
+                    'OPENING',
+                    null,
+                    'Opening stock — seeded'
+                );
+            }
         }
 
         // ── Suppliers ────────────────────────────────────────────────

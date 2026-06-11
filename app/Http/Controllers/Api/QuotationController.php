@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\JobCard;
+use App\Models\Product;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\Sale;
+use App\Support\PaperYieldService;
+use App\Support\StockLedger;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +43,9 @@ class QuotationController extends Controller
             'title'                 => 'required|string|max:255',
             'product_type'          => 'nullable|string|max:100',
             'paper_type'            => 'nullable|string|max:100',
+            'paper_product_id'      => 'nullable|exists:products,id',
+            'ink_product_id'        => 'nullable|exists:products,id',
+            'plate_product_id'      => 'nullable|exists:products,id',
             'gsm'                   => 'nullable|integer|min:1',
             'size'                  => 'nullable|string|max:50',
             'width_mm'              => 'nullable|numeric|min:0',
@@ -64,6 +70,9 @@ class QuotationController extends Controller
             'items.*.unit_price'    => 'required_with:items|numeric|min:0',
         ]);
 
+        // Auto-calculate paper_cost from yield if paper_product_id + dimensions + quantity provided
+        $data = $this->applyPaperYield($data);
+
         $quotation = new Quotation($data);
         $quotation->quotation_number = Quotation::generateNumber();
         $quotation->branch_id        = $request->user()->branch_id;
@@ -84,6 +93,9 @@ class QuotationController extends Controller
                 ]);
             }
         }
+
+        // Record stock ledger entries for linked inventory materials (reservation, no qty change)
+        $this->recordQuotationStockMovements($quotation, $request->user()->id, $request->user()->branch_id);
 
         AuditLog::record('quotation_created', "Quotation {$quotation->quotation_number} created", $quotation);
 
@@ -109,6 +121,9 @@ class QuotationController extends Controller
             'title'                 => 'required|string|max:255',
             'product_type'          => 'nullable|string|max:100',
             'paper_type'            => 'nullable|string|max:100',
+            'paper_product_id'      => 'nullable|exists:products,id',
+            'ink_product_id'        => 'nullable|exists:products,id',
+            'plate_product_id'      => 'nullable|exists:products,id',
             'gsm'                   => 'nullable|integer|min:1',
             'size'                  => 'nullable|string|max:50',
             'width_mm'              => 'nullable|numeric|min:0',
@@ -229,6 +244,89 @@ class QuotationController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * If a paper product + job dimensions + quantity are provided and paper_cost is not manually set,
+     * auto-compute sheets_needed and paper_cost from purchase_price × sheets.
+     */
+    private function applyPaperYield(array $data): array
+    {
+        // Only run if we have job dimensions and quantity
+        if (empty($data['quantity']) || empty($data['width_mm']) || empty($data['height_mm'])) {
+            return $data;
+        }
+
+        // Resolve paper dimensions: from product, named size, or nothing
+        $paperW = null;
+        $paperH = null;
+
+        if (!empty($data['paper_product_id'])) {
+            $product = Product::find($data['paper_product_id']);
+            if ($product?->paper_size) {
+                $mm = PaperYieldService::sizeToMm($product->paper_size);
+                if ($mm) [$paperW, $paperH] = $mm;
+            }
+        }
+
+        if (!$paperW && !empty($data['size'])) {
+            $mm = PaperYieldService::sizeToMm($data['size']);
+            if ($mm) [$paperW, $paperH] = $mm;
+        }
+
+        if (!$paperW) return $data; // can't calculate without paper dimensions
+
+        $wastage = (float) ($data['wastage_percent'] ?? 0);
+        $yield   = PaperYieldService::sheetsNeeded(
+            $paperW, $paperH,
+            (float) $data['width_mm'],
+            (float) $data['height_mm'],
+            (int)   $data['quantity'],
+            $wastage,
+            bleedMm: 3
+        );
+
+        // Store sheets needed (will save into quotation if column exists)
+        $data['paper_sheets_needed'] = $yield['sheets_with_wastage'];
+
+        // Auto-fill paper_cost only if the caller didn't already supply it
+        if (empty($data['paper_cost']) && !empty($data['paper_product_id'])) {
+            $product     = $product ?? Product::find($data['paper_product_id']);
+            $pricePerSheet = (float) ($product?->purchase_price ?? 0);
+            if ($pricePerSheet > 0) {
+                $data['paper_cost'] = round($yield['sheets_with_wastage'] * $pricePerSheet, 2);
+            }
+        }
+
+        return $data;
+    }
+
+    private function recordQuotationStockMovements(Quotation $quotation, int $userId, int $branchId): void
+    {
+        $links = [
+            'paper_product_id' => ['cost' => $quotation->paper_cost, 'label' => 'paper'],
+            'ink_product_id'   => ['cost' => $quotation->ink_cost,   'label' => 'ink'],
+            'plate_product_id' => ['cost' => $quotation->plate_cost, 'label' => 'plate'],
+        ];
+
+        foreach ($links as $fk => $info) {
+            $productId = $quotation->$fk;
+            if (!$productId) continue;
+            $product = Product::find($productId);
+            if (!$product) continue;
+
+            // Log a QUOTATION reference — does NOT change stock_quantity; records intent
+            StockLedger::record(
+                $product,
+                'QUOTATION',
+                (float) ($quotation->quantity ?? 0),
+                $userId,
+                $branchId,
+                'QUOTATION',
+                $quotation->id,
+                "Reserved for {$info['label']} — {$quotation->quotation_number}"
+            );
         }
     }
 

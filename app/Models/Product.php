@@ -13,10 +13,12 @@ class Product extends Model
 
     protected $fillable = [
         'branch_id', 'sku', 'barcode', 'name', 'description', 'category_id', 'product_type',
-        'brand', 'unit_type', 'base_unit', 'selling_variants', 'shot_variants',
+        'brand', 'unit_type', 'base_unit', 'bundle_size', 'selling_variants', 'shot_variants',
         'purchase_price', 'selling_price',
         'stock_quantity', 'min_stock_level', 'image', 'image_public_id', 'is_active', 'supplier_id',
         'bottle_deposit_required', 'bottle_deposit_amount', 'tax_setting_id',
+        // press-specific
+        'material_type', 'gsm', 'paper_size', 'reorder_level',
     ];
 
     protected $casts = [
@@ -46,6 +48,22 @@ class Product extends Model
     public function openBottles()
     {
         return $this->hasMany(OpenBottle::class);
+    }
+
+    public function openBundles()
+    {
+        return $this->hasMany(OpenBundle::class);
+    }
+
+    public function hasBundles(): bool
+    {
+        return (int) $this->bundle_size > 0;
+    }
+
+    // Total sheets across all currently open bundles
+    public function openBundleSheetsRemaining(): int
+    {
+        return (int) $this->openBundles()->where('status', 'open')->sum('sheets_remaining');
     }
 
     public function saleItems()

@@ -10,7 +10,7 @@ class JobConsumable extends Model
     use HasFactory;
 
     protected $fillable = [
-        'job_card_id', 'branch_id', 'type', 'description',
+        'job_card_id', 'branch_id', 'product_id', 'type', 'description',
         'quantity', 'unit', 'unit_cost', 'total_cost', 'notes', 'created_by',
     ];
 
@@ -23,6 +23,11 @@ class JobConsumable extends Model
     public function jobCard()
     {
         return $this->belongsTo(JobCard::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
     }
 
     public function creator()

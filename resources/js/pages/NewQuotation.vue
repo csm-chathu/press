@@ -44,6 +44,106 @@
       <!-- Print Specifications -->
       <div class="bg-white rounded-xl border border-gray-200 p-5">
         <h3 class="font-semibold text-gray-700 text-sm mb-4">Print Specifications</h3>
+
+        <!-- Paper from Stock -->
+        <div class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+          <label class="label text-blue-700">Paper from Stock</label>
+          <div class="flex gap-3 items-start flex-wrap">
+            <div class="flex-1 min-w-48">
+              <select v-model="selectedPaperProductId" @change="onPaperProductSelected" class="input w-full">
+                <option value="">— Select paper from inventory —</option>
+                <option v-for="p in paperProducts" :key="p.id" :value="p.id">
+                  {{ p.name }} ({{ p.gsm ? p.gsm + 'gsm · ' : '' }}{{ p.paper_size || p.base_unit }})
+                </option>
+              </select>
+            </div>
+
+            <!-- Stock badge -->
+            <div v-if="selectedPaper" class="flex gap-2 flex-wrap items-center pt-1">
+              <span :class="selectedPaper.stock_quantity > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                class="text-xs font-semibold px-2 py-1 rounded-full">
+                {{ selectedPaper.stock_quantity.toLocaleString() }} sheets in stock
+              </span>
+              <span v-if="selectedPaper.bundle_size" class="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-1 rounded-full">
+                {{ Math.floor(selectedPaper.stock_quantity / selectedPaper.bundle_size) }} bundles
+                ({{ selectedPaper.bundle_size }} sheets each)
+              </span>
+              <span class="text-xs text-gray-500">Rs. {{ fmt(selectedPaper.purchase_price) }}/sheet</span>
+            </div>
+
+            <!-- Yield result -->
+            <div v-if="yieldResult" class="w-full mt-2 space-y-2">
+              <!-- Job requirement row -->
+              <div class="p-3 bg-white rounded-lg border border-blue-200 text-xs text-gray-700 flex flex-wrap gap-4 items-center">
+                <span class="font-semibold text-blue-700 text-sm">Job Requirement</span>
+                <span>
+                  <span class="text-gray-500">Layout:</span>
+                  <strong class="text-blue-700 ml-1">{{ yieldResult.pieces_per_sheet }} up</strong>
+                  ({{ yieldResult.cols }}×{{ yieldResult.rows }}, {{ yieldResult.orientation }})
+                </span>
+                <span>
+                  <span class="text-gray-500">Net sheets:</span>
+                  <strong class="ml-1">{{ yieldResult.sheets_net?.toLocaleString() }}</strong>
+                </span>
+                <span>
+                  <span class="text-gray-500">+ wastage:</span>
+                  <strong class="text-amber-700 ml-1">{{ yieldResult.sheets_with_wastage?.toLocaleString() }} sheets</strong>
+                </span>
+                <span>
+                  <span class="text-gray-500">Efficiency:</span>
+                  <strong class="ml-1">{{ yieldResult.efficiency_pct }}%</strong>
+                </span>
+                <span v-if="yieldResult.bundles_needed">
+                  <span class="text-gray-500">Bundles needed:</span>
+                  <strong class="ml-1">{{ yieldResult.bundles_needed }}</strong>
+                </span>
+                <span v-if="yieldResult.stock_sufficient === false" class="text-red-600 font-semibold">⚠ Insufficient stock!</span>
+                <span v-else-if="yieldResult.stock_sufficient" class="text-green-600 font-semibold">✓ Stock sufficient</span>
+                <button type="button" @click="applyYieldCost"
+                  class="ml-auto bg-amber-500 hover:bg-amber-600 text-white text-xs px-3 py-1 rounded-lg font-semibold transition-colors">
+                  Apply Paper Cost (Rs. {{ fmt(yieldPaperCost) }})
+                </button>
+              </div>
+
+              <!-- Stock capacity row -->
+              <div v-if="selectedPaper && yieldResult.pieces_per_sheet > 0"
+                class="p-3 bg-green-50 rounded-lg border border-green-200 text-xs flex flex-wrap gap-6 items-center">
+                <span class="font-semibold text-green-700 text-sm">From Current Stock</span>
+                <span>
+                  <span class="text-gray-500">Max pieces producible:</span>
+                  <strong class="text-green-700 ml-1 text-sm">
+                    {{ (selectedPaper.stock_quantity * yieldResult.pieces_per_sheet).toLocaleString() }} pcs
+                  </strong>
+                </span>
+                <span>
+                  <span class="text-gray-500">From</span>
+                  <strong class="mx-1">{{ selectedPaper.stock_quantity.toLocaleString() }}</strong>
+                  <span class="text-gray-500">sealed sheets ×</span>
+                  <strong class="mx-1">{{ yieldResult.pieces_per_sheet }}</strong>
+                  <span class="text-gray-500">per sheet</span>
+                </span>
+                <span v-if="selectedPaper.bundle_size">
+                  <span class="text-gray-500">Per bundle ({{ selectedPaper.bundle_size }} sheets):</span>
+                  <strong class="text-green-700 ml-1">{{ (selectedPaper.bundle_size * yieldResult.pieces_per_sheet).toLocaleString() }} pcs</strong>
+                </span>
+                <span>
+                  <span class="text-gray-500">Sheets needed for {{ (form.quantity || 0).toLocaleString() }} pcs:</span>
+                  <strong class="ml-1"
+                    :class="yieldResult.stock_sufficient === false ? 'text-red-600' : 'text-gray-800'">
+                    {{ yieldResult.sheets_with_wastage?.toLocaleString() }}
+                    / {{ selectedPaper.stock_quantity.toLocaleString() }} available
+                  </strong>
+                </span>
+              </div>
+            </div>
+
+            <div v-else-if="selectedPaper && (!form.width_mm || !form.height_mm || !form.quantity)"
+              class="w-full text-xs text-blue-500 mt-1">
+              Fill in Width, Height and Quantity below to auto-calculate paper cost.
+            </div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <label class="label">Paper Type</label>
@@ -59,7 +159,7 @@
           </div>
           <div>
             <label class="label">Quantity</label>
-            <input v-model.number="form.quantity" type="number" placeholder="500" class="input w-full" />
+            <input v-model.number="form.quantity" @change="runYield" type="number" placeholder="500" class="input w-full" />
           </div>
           <div>
             <label class="label">Color Count</label>
@@ -82,11 +182,11 @@
           </div>
           <div>
             <label class="label">Width (mm)</label>
-            <input v-model.number="form.width_mm" type="number" step="0.1" placeholder="210" class="input w-full" />
+            <input v-model.number="form.width_mm" @change="runYield" type="number" step="0.1" placeholder="210" class="input w-full" />
           </div>
           <div>
             <label class="label">Height (mm)</label>
-            <input v-model.number="form.height_mm" type="number" step="0.1" placeholder="297" class="input w-full" />
+            <input v-model.number="form.height_mm" @change="runYield" type="number" step="0.1" placeholder="297" class="input w-full" />
           </div>
         </div>
       </div>
@@ -183,6 +283,14 @@ const saving = ref(false)
 const customers = ref([])
 const templates = ref([])
 const savingTemplate = ref(false)
+const paperProducts = ref([])
+const selectedPaperProductId = ref('')
+const selectedPaper = computed(() => paperProducts.value.find(p => p.id == selectedPaperProductId.value) || null)
+const yieldResult = ref(null)
+const yieldPaperCost = computed(() => {
+  if (!yieldResult.value || !selectedPaper.value) return 0
+  return Math.round(yieldResult.value.sheets_with_wastage * (selectedPaper.value.purchase_price || 0) * 100) / 100
+})
 
 const COST_FIELDS = ['plate_cost','paper_cost','ink_cost','finishing_cost','labour_cost','wastage_percent','profit_margin_percent','tax_rate']
 
@@ -206,6 +314,7 @@ const form = ref({
   title: '',
   product_type: '',
   paper_type: '',
+  paper_product_id: null,
   gsm: null,
   size: '',
   width_mm: null,
@@ -242,6 +351,42 @@ const subtotal = computed(() => {
 const total = computed(() => subtotal.value * (1 + (form.value.tax_rate || 0) / 100))
 
 function calc() {}
+
+function onPaperProductSelected() {
+  yieldResult.value = null
+  const p = selectedPaper.value
+  if (!p) return
+  // Auto-fill spec fields from selected product
+  if (p.name)       form.value.paper_type = p.name
+  if (p.gsm)        form.value.gsm        = p.gsm
+  if (p.paper_size) form.value.size       = p.paper_size
+  form.value.paper_product_id = p.id
+  runYield()
+}
+
+async function runYield() {
+  const p = selectedPaper.value
+  if (!p || !form.value.width_mm || !form.value.height_mm || !form.value.quantity) {
+    yieldResult.value = null
+    return
+  }
+  try {
+    const { data } = await axios.post('/api/tools/paper-yield', {
+      paper_product_id: p.id,
+      job_w_mm:         form.value.width_mm,
+      job_h_mm:         form.value.height_mm,
+      quantity:         form.value.quantity,
+      wastage_percent:  form.value.wastage_percent || 0,
+      bleed_mm:         3,
+    })
+    yieldResult.value = data
+  } catch { yieldResult.value = null }
+}
+
+function applyYieldCost() {
+  form.value.paper_cost = yieldPaperCost.value
+  calc()
+}
 
 function loadTemplate(id) {
   if (!id) return
@@ -282,12 +427,17 @@ async function submit() {
 }
 
 onMounted(async () => {
-  const [custRes, tmplRes] = await Promise.all([
+  const [custRes, tmplRes, paperRes] = await Promise.all([
     axios.get('/api/customers/all'),
     axios.get('/api/quotation-templates'),
+    axios.get('/api/products?product_type=product&per_page=200'),
   ])
-  customers.value  = custRes.data
-  templates.value  = tmplRes.data
+  customers.value     = custRes.data
+  templates.value     = tmplRes.data
+  // Filter to paper/board products only
+  paperProducts.value = (paperRes.data.data || []).filter(p =>
+    p.material_type === 'paper' || (p.category?.name || '').toLowerCase().includes('paper')
+  )
 })
 </script>
 
