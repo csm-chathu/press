@@ -10,5 +10,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(ChartOfAccountSeeder::class);
         $this->call(PrintingPressSeeder::class);
+        $this->call(DemoDataSeeder::class);
     }
 }
